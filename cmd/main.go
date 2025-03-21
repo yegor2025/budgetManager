@@ -29,9 +29,6 @@ func main() {
 	var vr sheets.ValueRange
 	vr.Values = append(vr.Values, values)
 
-	// Диапазон (пустая строка указывает на добавление в конец таблицы)
-	// Убедись, что имя листа правильно
-
 	// Добавление данных в таблицу
 	_, err = srv.Spreadsheets.Values.Append(spreadsheetID, rangeData, &vr).ValueInputOption("RAW").Do()
 	if err != nil {
