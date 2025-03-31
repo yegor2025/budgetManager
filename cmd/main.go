@@ -1,18 +1,18 @@
 package main
 
 import (
+	"context"
 	"github.com/yegor2025/budgetManager/cilents/telegram"
+	event_consumer "github.com/yegor2025/budgetManager/consumer/event-consumer"
+	eventTelegram "github.com/yegor2025/budgetManager/events/telegram"
+	"github.com/yegor2025/budgetManager/storage/googleSheets"
 	"log"
 	"os"
 )
 
 const (
-	spreadsheetID = "13UcQUHFmCa_oK3IXGth5BBtT8lpfUYQF7SvZM3Yp6iM"
-	rangeData     = "Diary.xlsx"
-)
-
-const (
 	tgBotHost = "api.telegram.org"
+	batchSize = 100
 )
 
 func main() {
@@ -23,31 +23,16 @@ func main() {
 
 	tgClient := telegram.New(tgBotHost, token)
 
-	// fetcher := fetcher.New()
+	ctx := context.Background()
+	storage := googleSheets.New(ctx, "./tokens.json")
 
-	// processor := processor.New()
+	eventProcessor := eventTelegram.New(tgClient, storage)
 
-	// consumer.Start(fetcher, processor)
+	log.Printf("service started")
+
+	consumer := event_consumer.New(eventProcessor, eventProcessor, 100)
+
+	if err := consumer.Start(); err != nil {
+		log.Fatal("service is stopped", err)
+	}
 }
-
-//// Загружаем учетные данные сервисного аккаунта
-//ctx := context.Background()
-//srv, err := sheets.NewService(ctx, option.WithCredentialsFile("tokens.json"))
-//if err != nil {
-//log.Fatalf("Не удалось создать клиент Sheets: %v", err)
-//}
-//
-//// Новые данные для добавления (например, в строках A1, B1, C1)
-//values := []interface{}{"Новая запись 1", 100, "Комментарий"}
-//
-//// Подготовка данных в формате, который можно записать в таблицу
-//var vr sheets.ValueRange
-//vr.Values = append(vr.Values, values)
-//
-//// Добавление данных в таблицу
-//_, err = srv.Spreadsheets.Values.Append(spreadsheetID, rangeData, &vr).ValueInputOption("RAW").Do()
-//if err != nil {
-//log.Fatalf("Ошибка добавления данных: %v", err)
-//}
-//
-//fmt.Println("Данные успешно добавлены!")

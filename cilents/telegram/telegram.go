@@ -2,7 +2,6 @@ package telegram
 
 import (
 	"encoding/json"
-	"fmt"
 	"github.com/pkg/errors"
 	"io"
 	"net/http"
@@ -47,7 +46,7 @@ func (c *Client) SendMessage(chatID int, text string) error {
 	return nil
 }
 
-func (c *Client) Update(offset, limit int) ([]Update, error) {
+func (c *Client) Updates(offset, limit int) ([]Update, error) {
 	q := url.Values{}
 	q.Add("offset", strconv.Itoa(offset))
 	q.Add("limit", strconv.Itoa(limit))
