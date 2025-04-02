@@ -17,14 +17,16 @@ func (p *Processor) doCmd(text string, chatID int, username string) error {
 
 	log.Printf("got new command '%s' from '%s'", text, username)
 
-	switch text {
-	case RndCmd:
-		return p.saveRecord(chatID, text, username)
-	case StartCmd:
-		return p.sendHello(chatID)
-	default:
-		return p.tg.SendMessage(chatID, msgUnknownCommand)
-	}
+	return p.saveRecord(chatID, text, username)
+
+	//switch text {
+	//case RndCmd:
+	//	return p.saveRecord(chatID, text, username)
+	//case StartCmd:
+	//	return p.sendHello(chatID)
+	//default:
+	//	return p.tg.SendMessage(chatID, msgUnknownCommand)
+	//}
 }
 
 func (p *Processor) saveRecord(chatID int, text string, username string) (err error) {
@@ -32,9 +34,13 @@ func (p *Processor) saveRecord(chatID int, text string, username string) (err er
 
 	sendMsg := NewMessageSender(chatID, p.tg)
 
-	if err = p.storage.Append(text); err != nil {
+	if err = p.storage.InsertBeforeLast(text, false); err != nil {
 		return err
 	}
+
+	//if err = p.storage.Append(text); err != nil {
+	//	return err
+	//}
 
 	if err = sendMsg(msgSaved); err != nil {
 		return err

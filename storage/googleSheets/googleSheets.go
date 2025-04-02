@@ -56,7 +56,7 @@ func (s Storage) Append(message string) error {
 	var vr sheets.ValueRange
 	vr.Values = append(vr.Values, values)
 
-	_, err := s.Client.Spreadsheets.Values.Append(spreadsheetID, sheetName, &vr).ValueInputOption("RAW").Do()
+	_, err := s.Client.Spreadsheets.Values.Append(spreadsheetID, sheetName+"!A:A", &vr).ValueInputOption("RAW").InsertDataOption("INSERT_ROWS").Do()
 	if err != nil {
 		log.Printf("Storage.Append: %v", err)
 	}
@@ -64,9 +64,9 @@ func (s Storage) Append(message string) error {
 	return err
 }
 
-func (s Storage) InsertBeforeLast(sheetName, message string, isCalculation bool) error {
-	// Получаем количество строк в листе
-	rangeData := fmt.Sprintf("%s!A:A", sheetName) // Берем первую колонку, чтобы определить длину таблицы
+func (s Storage) InsertBeforeLast(message string, isCalculation bool) error {
+	// Получаем количество строк
+	rangeData := fmt.Sprintf("%s!A:A", sheetName)
 	resp, err := s.Client.Spreadsheets.Values.Get(spreadsheetID, rangeData).Do()
 	if err != nil {
 		log.Printf("Ошибка при получении количества строк: %v", err)
@@ -75,14 +75,35 @@ func (s Storage) InsertBeforeLast(sheetName, message string, isCalculation bool)
 
 	rowCount := len(resp.Values) // Количество заполненных строк
 	if rowCount < 2 {
-		log.Println("Недостаточно строк для вставки")
 		return fmt.Errorf("недостаточно строк для вставки")
 	}
 
-	insertRow := rowCount // Последняя строка
-	insertRow--           // Берем предпоследнюю строку
+	insertRow := rowCount // Определяем предпоследнюю строку (нумерация с 1)
 
-	// Разбиваем сообщение на части
+	// Сдвигаем последнюю строку вниз
+	requests := []*sheets.Request{
+		{
+			InsertDimension: &sheets.InsertDimensionRequest{
+				Range: &sheets.DimensionRange{
+					SheetId:    getSheetID(sheetName, &s), // Функция получения SheetId
+					Dimension:  "ROWS",
+					StartIndex: int64(insertRow), // Google Sheets использует 0-based index
+					EndIndex:   int64(insertRow + 1),
+				},
+				InheritFromBefore: true,
+			},
+		},
+	}
+
+	_, err = s.Client.Spreadsheets.BatchUpdate(spreadsheetID, &sheets.BatchUpdateSpreadsheetRequest{
+		Requests: requests,
+	}).Do()
+	if err != nil {
+		log.Printf("Ошибка при сдвиге строк: %v", err)
+		return err
+	}
+
+	// Заполняем новую строку
 	parts := strings.Split(message, ",")
 	for i := range parts {
 		parts[i] = strings.TrimSpace(parts[i])
@@ -92,7 +113,6 @@ func (s Storage) InsertBeforeLast(sheetName, message string, isCalculation bool)
 	if !isCalculation {
 		values = append(values, generateDate()) // Добавляем дату, если это не расчет
 	}
-
 	for _, part := range parts {
 		if part == "0" {
 			values = append(values, nil)
@@ -104,7 +124,7 @@ func (s Storage) InsertBeforeLast(sheetName, message string, isCalculation bool)
 	var vr sheets.ValueRange
 	vr.Values = append(vr.Values, values)
 
-	// Определяем диапазон вставки
+	// Записываем в предпоследнюю строку
 	insertRange := fmt.Sprintf("%s!A%d", sheetName, insertRow)
 
 	_, err = s.Client.Spreadsheets.Values.Update(spreadsheetID, insertRange, &vr).ValueInputOption("RAW").Do()
@@ -113,6 +133,21 @@ func (s Storage) InsertBeforeLast(sheetName, message string, isCalculation bool)
 	}
 
 	return err
+}
+
+func getSheetID(sheetName string, s *Storage) int64 {
+	resp, err := s.Client.Spreadsheets.Get(spreadsheetID).Do()
+	if err != nil {
+		log.Fatalf("Ошибка при получении таблицы: %v", err)
+	}
+
+	for _, sheet := range resp.Sheets {
+		if sheet.Properties.Title == sheetName {
+			return sheet.Properties.SheetId
+		}
+	}
+	log.Fatalf("Лист %s не найден", sheetName)
+	return -1
 }
 
 func generateDate() string {
