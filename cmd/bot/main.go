@@ -4,13 +4,13 @@ import (
 	tgbotapi "github.com/go-telegram-bot-api/telegram-bot-api"
 	"github.com/yegor2025/budgetManager/internal/bot"
 	"log"
+	"os"
 )
 
-const (
-	token = "7578319650:AAFGX3s4UTjZYP5Ii8tdhPI3hCd0Av9BAVc"
-)
+const ()
 
 func main() {
+	token := os.Getenv("TOKEN")
 	tgBot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
 		log.Fatalf("Failed to create bot: %v", err)
