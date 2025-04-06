@@ -37,26 +37,6 @@ func (p *Processor) ProcessMessage(msg *tgbotapi.Message) {
 }
 
 func (p *Processor) sendStartMenu(chatID int64) {
-	msg := tgbotapi.NewMessage(chatID, "Привет! Выберите действие:")
-
-	// 🧷 Инлайн-кнопки (прикреплены к сообщению)
-	inlineButtons := tgbotapi.NewInlineKeyboardMarkup(
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("📦 Заказать", "order"),
-			tgbotapi.NewInlineKeyboardButtonData("📊 История", "history"),
-		),
-		tgbotapi.NewInlineKeyboardRow(
-			tgbotapi.NewInlineKeyboardButtonData("❓ Помощь", "help"),
-		),
-	)
-	msg.ReplyMarkup = inlineButtons
-
-	// Отправим инлайн-кнопки
-	p.bot.Send(msg)
-
-	// 🧷 Reply-клавиатура (под строкой ввода)
-	replyKeyboard := tgbotapi.NewMessage(chatID, "Вот меню внизу чата 👇")
-
 	keyboard := tgbotapi.NewReplyKeyboard(
 		tgbotapi.NewKeyboardButtonRow(
 			tgbotapi.NewKeyboardButton("📥 Новое сообщение"),
@@ -67,9 +47,11 @@ func (p *Processor) sendStartMenu(chatID int64) {
 		),
 	)
 	keyboard.ResizeKeyboard = true // Автоматически подгоняет размер
-	replyKeyboard.ReplyMarkup = keyboard
 
-	p.bot.Send(replyKeyboard)
+	msg := tgbotapi.NewMessage(chatID, "Добро пожаловать!")
+	msg.ReplyMarkup = keyboard
+
+	p.bot.Send(msg)
 }
 
 func (p *Processor) ProcessCallback(cb *tgbotapi.CallbackQuery) {

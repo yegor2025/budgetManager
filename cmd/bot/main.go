@@ -7,9 +7,8 @@ import (
 	"os"
 )
 
-const ()
-
 func main() {
+
 	token := os.Getenv("TOKEN")
 	tgBot, err := tgbotapi.NewBotAPI(token)
 	if err != nil {
